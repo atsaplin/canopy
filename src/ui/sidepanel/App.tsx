@@ -6,6 +6,7 @@ import { useTabStore } from "@ui/stores/tabStore";
 import { SearchResults } from "@ui/components/Search/SearchResults";
 import { SessionsDropdown } from "@ui/components/Sessions/SessionsDropdown";
 import { ContextDumpButton } from "@ui/components/ContextDump/ContextDumpButton";
+import { CopyJsonButton } from "@ui/components/CopyJsonButton/CopyJsonButton";
 import { useSettingsStore } from "@ui/stores/settingsStore";
 
 export function App() {
@@ -39,6 +40,7 @@ export function App() {
           <SearchInput />
         </div>
         <div className="flex items-center px-1 gap-0.5">
+          <CopyJsonButton />
           <ContextDumpButton />
           <SessionsDropdown />
         </div>
