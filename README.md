@@ -24,7 +24,7 @@ Coming soon.
 ### From Source
 
 ```bash
-git clone https://github.com/AAlceste/canopy.git
+git clone https://github.com/atsaplin/canopy.git
 cd canopy
 npm install
 npm run build
