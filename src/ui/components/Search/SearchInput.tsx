@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { useTabStore } from "@ui/stores/tabStore";
 
 export function SearchInput() {
@@ -6,6 +6,31 @@ export function SearchInput() {
   const setSearchKeyword = useTabStore((s) => s.setSearchKeyword);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Listen for focus-search command — retry focus until it works
+  useEffect(() => {
+    const handler = (message: unknown) => {
+      const msg = message as { type?: string; command?: string } | undefined;
+      if (msg?.type === "COMMAND" && msg?.command === "focus-search") {
+        // Retry focus with increasing delays to handle panel opening
+        const tryFocus = (attempts: number) => {
+          if (attempts <= 0) return;
+          setTimeout(() => {
+            const input = inputRef.current ?? document.querySelector<HTMLInputElement>("[data-search-input]");
+            if (input) {
+              input.focus();
+              input.select();
+            } else {
+              tryFocus(attempts - 1);
+            }
+          }, attempts === 3 ? 100 : 300);
+        };
+        tryFocus(3);
+      }
+    };
+    chrome.runtime.onMessage.addListener(handler);
+    return () => chrome.runtime.onMessage.removeListener(handler);
+  }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,6 +48,24 @@ export function SearchInput() {
     if (inputRef.current) {
       inputRef.current.value = "";
       inputRef.current.focus();
+    }
+  }, [setSearchKeyword]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      // Move focus to first search result
+      const firstResult = document.querySelector<HTMLElement>("[data-search-result]");
+      firstResult?.focus();
+    } else if (e.key === "Escape") {
+      if (inputRef.current?.value) {
+        // First Escape clears search
+        setSearchKeyword("");
+        if (inputRef.current) inputRef.current.value = "";
+      } else {
+        // Second Escape blurs input
+        inputRef.current?.blur();
+      }
     }
   }, [setSearchKeyword]);
 
@@ -44,6 +87,7 @@ export function SearchInput() {
         placeholder="Search tabs..."
         defaultValue={searchKeyword}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         data-search-input
         className="flex-1 bg-transparent border-none outline-none text-[13px]
           text-[var(--color-fg)] placeholder:text-[var(--color-muted)]"
