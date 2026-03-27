@@ -9,13 +9,11 @@ import { setupAPIHandler } from "@background/apiHandler";
 const storage = new StorageManager(new ChromeStorageBackend());
 const tracker = new TabParentTracker(storage);
 
-// Initialize on service worker activation
-async function init(): Promise<void> {
+// Gate all event processing until init completes (Bug 3 fix)
+const initPromise = (async () => {
   await tracker.init();
   broadcast({ type: "SW_READY" });
-}
-
-init();
+})();
 
 // Set up lifecycle (install/update handlers)
 setupLifecycle(storage);
@@ -51,10 +49,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
-// Handle keyboard shortcut commands
+// Handle keyboard shortcut commands (Bug 2 fix: delay broadcast for panel mount)
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "focus-search" || command === "copy-context" || command === "save-session") {
-    // Open side panel first, then broadcast the command to the UI
     try {
       const window = await chrome.windows.getCurrent();
       if (window.id !== undefined) {
@@ -63,24 +60,44 @@ chrome.commands.onCommand.addListener(async (command) => {
     } catch {
       // Side panel may not be available
     }
-    // Broadcast the command so the side panel UI can handle it
+    // Wait for the side panel React app to mount and register its listener
+    await new Promise((resolve) => setTimeout(resolve, 500));
     broadcast({ type: "COMMAND", command });
   }
 });
 
+/** URLs that indicate a genuinely new tab (not opened from a link). */
+const NEW_TAB_URLS = new Set([
+  "chrome://newtab/",
+  "chrome://new-tab-page/",
+  "about:blank",
+  "about:newtab",
+  "",
+]);
+
 // Chrome tab event listeners → broadcast as domain events
 chrome.tabs.onCreated.addListener(async (tab) => {
-  await tracker.onTabCreated(tab);
+  await initPromise; // Bug 3 fix: wait for init before processing
+  // Bug 11 fix: don't parent new blank tabs — only parent tabs opened from links
+  if (tab.pendingUrl && NEW_TAB_URLS.has(tab.pendingUrl)) {
+    // This is a Ctrl+T or address bar tab, not a link click — skip parenting
+  } else if (tab.url && NEW_TAB_URLS.has(tab.url)) {
+    // Same check for url field
+  } else {
+    // Bug 12 fix: skip if tracker is in restore mode
+    if (!tracker.isRestoring) {
+      await tracker.onTabCreated(tab);
+    }
+  }
   broadcast({ type: "TAB_CREATED", tab });
-  // Broadcast updated parent map so UI stays in sync
-  if (tab.openerTabId !== undefined) {
+  if (tab.openerTabId !== undefined && !NEW_TAB_URLS.has(tab.pendingUrl ?? "") && !NEW_TAB_URLS.has(tab.url ?? "")) {
     broadcast({ type: "PARENT_MAP_CHANGED", parentMap: tracker.getParentMap() });
   }
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  await initPromise; // Bug 3 fix
   await tracker.onTabRemoved(tabId);
-  // Clean up activity tracking for closed tabs (prevents storage leak)
   storage.removeTabActivity(tabId).catch(() => {});
   broadcast({ type: "TAB_REMOVED", tabId, windowId: removeInfo.windowId });
 });
@@ -94,9 +111,7 @@ chrome.tabs.onMoved.addListener((tabId, moveInfo) => {
 });
 
 chrome.tabs.onActivated.addListener((activeInfo) => {
-  // Track tab activity for decay detection
   storage.recordTabAccess(activeInfo.tabId).catch(() => {});
-
   broadcast({
     type: "TAB_ACTIVATED",
     tabId: activeInfo.tabId,

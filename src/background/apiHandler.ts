@@ -5,6 +5,7 @@ import { buildTree } from "@core/TreeBuilder";
 import { findNodeById } from "@core/TabTreeNode";
 import { dumpContextAsMarkdown } from "@core/ContextDumper";
 import { getChildren } from "@core/ParentMap";
+import { broadcast } from "@background/broadcast";
 import type { TabGroupColor } from "@core/types";
 
 const CANOPY_VERSION = "2.0.0";
@@ -114,20 +115,22 @@ async function handleAPIMessage(
     }
 
     case "canopy:collapse-tree":
-      // Broadcast a collapse event for the UI to handle
-      chrome.runtime.sendMessage({ type: "API_COLLAPSE", tabId: message.tabId }).catch(() => {});
-      return { ok: true };
+      // Bug 7 fix: collapse/expand are UI-only operations — not implementable from the API
+      // since collapsed state lives in the UI's Zustand store, not the service worker.
+      return { error: "collapse-tree is not supported via the external API", code: "NOT_SUPPORTED" };
 
     case "canopy:expand-tree":
-      chrome.runtime.sendMessage({ type: "API_EXPAND", tabId: message.tabId }).catch(() => {});
-      return { ok: true };
+      return { error: "expand-tree is not supported via the external API", code: "NOT_SUPPORTED" };
 
     case "canopy:attach-tab":
       await tracker.setParent(message.tabId, message.parentId);
+      // Bug 8 fix: broadcast so the side panel UI updates
+      broadcast({ type: "PARENT_MAP_CHANGED", parentMap: tracker.getParentMap() });
       return { ok: true };
 
     case "canopy:detach-tab":
       await tracker.removeParent(message.tabId);
+      broadcast({ type: "PARENT_MAP_CHANGED", parentMap: tracker.getParentMap() });
       return { ok: true };
 
     case "canopy:move-tab": {

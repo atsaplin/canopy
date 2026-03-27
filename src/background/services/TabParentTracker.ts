@@ -8,6 +8,8 @@ import type { StorageManager } from "@background/storage/StorageManager";
  */
 export class TabParentTracker {
   private parentMap: ParentMap = {};
+  /** Set to true during session restore to skip onTabCreated auto-parenting (Bug 12 fix). */
+  isRestoring = false;
   constructor(private storage: StorageManager) {}
 
   /** Initialize from persisted storage. */

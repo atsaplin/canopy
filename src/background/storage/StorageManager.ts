@@ -18,8 +18,31 @@ export class ChromeStorageBackend implements StorageBackend {
   }
 }
 
-/** Typed storage manager with schema versioning and migration support. */
+/**
+ * Simple async mutex — serializes writes to prevent read-modify-write races.
+ * Each key gets its own lock so independent keys don't block each other.
+ */
+class AsyncMutex {
+  private locks = new Map<string, Promise<void>>();
+
+  async withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.locks.get(key) ?? Promise.resolve();
+    let release: () => void;
+    const next = new Promise<void>((resolve) => { release = resolve; });
+    this.locks.set(key, next);
+    await prev;
+    try {
+      return await fn();
+    } finally {
+      release!();
+    }
+  }
+}
+
+/** Typed storage manager with schema versioning, migration support, and write serialization. */
 export class StorageManager {
+  private mutex = new AsyncMutex();
+
   constructor(private backend: StorageBackend) {}
 
   async getParentMap(): Promise<Record<number, number>> {
@@ -28,9 +51,11 @@ export class StorageManager {
   }
 
   async setParentMap(parentMap: Record<number, number>): Promise<void> {
-    const data = await this.getOrCreateSchema();
-    data.tabParentMap = parentMap;
-    await this.backend.set("canopy", data);
+    await this.mutex.withLock("canopy", async () => {
+      const data = await this.getOrCreateSchema();
+      data.tabParentMap = parentMap;
+      await this.backend.set("canopy", data);
+    });
   }
 
   async getCollapsedNodeIds(): Promise<string[]> {
@@ -39,9 +64,11 @@ export class StorageManager {
   }
 
   async setCollapsedNodeIds(ids: string[]): Promise<void> {
-    const data = await this.getOrCreateSchema();
-    data.collapsedNodeIds = ids;
-    await this.backend.set("canopy", data);
+    await this.mutex.withLock("canopy", async () => {
+      const data = await this.getOrCreateSchema();
+      data.collapsedNodeIds = ids;
+      await this.backend.set("canopy", data);
+    });
   }
 
   async getSchemaVersion(): Promise<number> {
@@ -50,24 +77,27 @@ export class StorageManager {
   }
 
   async runMigrations(): Promise<void> {
-    const version = await this.getSchemaVersion();
-    if (version < CURRENT_SCHEMA_VERSION) {
-      // For now, just ensure the schema exists with defaults
-      const data = await this.getOrCreateSchema();
-      data.version = CURRENT_SCHEMA_VERSION;
-      await this.backend.set("canopy", data);
-    }
+    await this.mutex.withLock("canopy", async () => {
+      const version = await this.getSchemaVersion();
+      if (version < CURRENT_SCHEMA_VERSION) {
+        const data = await this.getOrCreateSchema();
+        data.version = CURRENT_SCHEMA_VERSION;
+        await this.backend.set("canopy", data);
+      }
+    });
   }
 
   // --- Session methods ---
 
   async saveSession(session: SessionData): Promise<string> {
-    const id = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const data = await this.getOrCreateSchema();
-    if (!data.sessions) data.sessions = {};
-    data.sessions[id] = session;
-    await this.backend.set("canopy", data);
-    return id;
+    return await this.mutex.withLock("canopy", async () => {
+      const id = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const data = await this.getOrCreateSchema();
+      if (!data.sessions) data.sessions = {};
+      data.sessions[id] = session;
+      await this.backend.set("canopy", data);
+      return id;
+    });
   }
 
   async listSessions(): Promise<SessionListItem[]> {
@@ -87,21 +117,23 @@ export class StorageManager {
   }
 
   async deleteSession(id: string): Promise<void> {
-    const data = await this.getOrCreateSchema();
-    if (data.sessions) {
-      delete data.sessions[id];
-      await this.backend.set("canopy", data);
-    }
+    await this.mutex.withLock("canopy", async () => {
+      const data = await this.getOrCreateSchema();
+      if (data.sessions) {
+        delete data.sessions[id];
+        await this.backend.set("canopy", data);
+      }
+    });
   }
 
-  // --- Tab activity methods ---
-
-  // --- Tab activity methods (separate storage key for performance) ---
+  // --- Tab activity methods (separate storage key) ---
 
   async recordTabAccess(tabId: number): Promise<void> {
-    const activity = await this.backend.get<Record<number, number>>("canopy_activity") ?? {};
-    activity[tabId] = Date.now();
-    await this.backend.set("canopy_activity", activity);
+    await this.mutex.withLock("canopy_activity", async () => {
+      const activity = await this.backend.get<Record<number, number>>("canopy_activity") ?? {};
+      activity[tabId] = Date.now();
+      await this.backend.set("canopy_activity", activity);
+    });
   }
 
   async getTabActivity(): Promise<Record<number, number>> {
@@ -109,9 +141,11 @@ export class StorageManager {
   }
 
   async removeTabActivity(tabId: number): Promise<void> {
-    const activity = await this.backend.get<Record<number, number>>("canopy_activity") ?? {};
-    delete activity[tabId];
-    await this.backend.set("canopy_activity", activity);
+    await this.mutex.withLock("canopy_activity", async () => {
+      const activity = await this.backend.get<Record<number, number>>("canopy_activity") ?? {};
+      delete activity[tabId];
+      await this.backend.set("canopy_activity", activity);
+    });
   }
 
   private async getOrCreateSchema(): Promise<StorageSchema> {

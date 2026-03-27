@@ -25,6 +25,7 @@ export type ErrorCode =
   | "TAB_NOT_FOUND"
   | "GROUP_NOT_FOUND"
   | "SESSION_NOT_FOUND"
+  | "RESTORE_FAILED"
   | "INVALID_OPERATION"
   | "CHROME_API_ERROR"
   | "UNKNOWN_ERROR";

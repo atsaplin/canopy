@@ -1,16 +1,9 @@
 import { useState, useEffect } from "react";
 import { useSettingsStore, DEFAULT_SETTINGS, type Settings } from "@ui/stores/settingsStore";
-import type { SessionData, SessionNode } from "@core/types";
+import type { SessionData, SessionNode, SessionListItem } from "@core/types";
 import { exportSessionAsFile, importSessionFromFile } from "@ui/utils/fileHelpers";
 
 type TabName = "general" | "hotkeys" | "sessions" | "about";
-
-interface SessionListItem {
-  id: string;
-  name: string;
-  savedAt: string;
-  nodeCount: number;
-}
 
 function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleString();

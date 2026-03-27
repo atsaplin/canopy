@@ -160,8 +160,11 @@ async function handleMessage(
           return { success: false, error: "Session not found", code: "SESSION_NOT_FOUND" };
         }
         const restorer = new SessionRestorer(tracker);
-        await restorer.restore(session, message.mode);
-        return { success: true };
+        const stats = await restorer.restore(session, message.mode);
+        if (stats.failed > 0 && stats.created === 0) {
+          return { success: false, error: `All ${stats.failed} tabs failed to restore`, code: "RESTORE_FAILED" };
+        }
+        return { success: true, data: { created: stats.created, failed: stats.failed } };
       }
 
       case "DELETE_SESSION": {
