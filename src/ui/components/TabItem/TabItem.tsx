@@ -29,6 +29,7 @@ export function TabItem({ item }: TabItemProps) {
   const tabActivityMap = useTabStore((s) => s.tabActivityMap);
   const indentSize = useSettingsStore((s) => s.indentSize);
   const showDecayIndicators = useSettingsStore((s) => s.showDecayIndicators);
+  const alwaysShowTabAge = useSettingsStore((s) => s.alwaysShowTabAge);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   const tab = node.tab;
@@ -140,25 +141,39 @@ export function TabItem({ item }: TabItemProps) {
         {/* Title */}
         <span className="truncate flex-1 text-[13px]">{tab.title}</span>
 
-        {/* Decay indicator with relative time */}
-        {showDecayIndicators && decayLevel !== "fresh" && (() => {
+        {/* Tab age / decay indicator */}
+        {(() => {
           const lastAccessed = tabActivityMap[tab.id];
           const relTime = lastAccessed ? formatRelativeTime(lastAccessed) : "";
-          if (decayLevel === "warm") {
-            return relTime ? (
-              <span className="text-[10px] shrink-0 text-[var(--color-muted)]" title={`Last visited ${relTime}`}>
-                {relTime}
+          // Always show age if setting is on, regardless of decay level
+          if (alwaysShowTabAge && relTime) {
+            const color = decayLevel === "decayed" ? "text-orange-400" : decayLevel === "stale" ? "text-yellow-500" : "text-[var(--color-muted)]";
+            const emoji = showDecayIndicators && decayLevel === "decayed" ? "💤 " : showDecayIndicators && decayLevel === "stale" ? "⏳ " : "";
+            return (
+              <span className={`text-[10px] shrink-0 ${color}`} title={`Last visited ${relTime} ago`}>
+                {emoji}{relTime}
               </span>
-            ) : null;
+            );
           }
-          return (
-            <span
-              className={`text-[10px] shrink-0 ${decayLevel === "decayed" ? "text-orange-400" : "text-yellow-500"}`}
-              title={`Last visited ${relTime}`}
-            >
-              {decayLevel === "decayed" ? "💤" : "⏳"} {relTime}
-            </span>
-          );
+          // Otherwise only show for non-fresh tabs when decay indicators are on
+          if (showDecayIndicators && decayLevel !== "fresh" && relTime) {
+            if (decayLevel === "warm") {
+              return (
+                <span className="text-[10px] shrink-0 text-[var(--color-muted)]" title={`Last visited ${relTime} ago`}>
+                  {relTime}
+                </span>
+              );
+            }
+            return (
+              <span
+                className={`text-[10px] shrink-0 ${decayLevel === "decayed" ? "text-orange-400" : "text-yellow-500"}`}
+                title={`Last visited ${relTime} ago`}
+              >
+                {decayLevel === "decayed" ? "💤" : "⏳"} {relTime}
+              </span>
+            );
+          }
+          return null;
         })()}
 
         {/* Child count badge */}

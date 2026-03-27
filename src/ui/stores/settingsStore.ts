@@ -2,12 +2,14 @@ import { create } from "zustand";
 
 export interface Settings {
   showDecayIndicators: boolean;
+  alwaysShowTabAge: boolean;
   indentSize: number;
   confirmCloseTree: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   showDecayIndicators: true,
+  alwaysShowTabAge: false,
   indentSize: 16,
   confirmCloseTree: false,
 };
@@ -29,6 +31,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const saved = result.canopy_settings as Partial<Settings>;
       set({
         showDecayIndicators: saved.showDecayIndicators ?? DEFAULT_SETTINGS.showDecayIndicators,
+        alwaysShowTabAge: saved.alwaysShowTabAge ?? DEFAULT_SETTINGS.alwaysShowTabAge,
         indentSize: saved.indentSize ?? DEFAULT_SETTINGS.indentSize,
         confirmCloseTree: saved.confirmCloseTree ?? DEFAULT_SETTINGS.confirmCloseTree,
         loaded: true,
@@ -42,6 +45,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const current = get();
     const newSettings: Settings = {
       showDecayIndicators: partial.showDecayIndicators ?? current.showDecayIndicators,
+      alwaysShowTabAge: partial.alwaysShowTabAge ?? current.alwaysShowTabAge,
       indentSize: partial.indentSize ?? current.indentSize,
       confirmCloseTree: partial.confirmCloseTree ?? current.confirmCloseTree,
     };

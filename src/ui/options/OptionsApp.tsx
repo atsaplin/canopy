@@ -193,6 +193,14 @@ export function OptionsApp() {
                   <Toggle checked={settings.showDecayIndicators} onChange={(v) => updateSetting("showDecayIndicators", v)} />
                 }
               />
+
+              <SettingRow
+                label="Always show tab age"
+                description="Display how long ago each tab was last visited, even for fresh tabs"
+                control={
+                  <Toggle checked={settings.alwaysShowTabAge} onChange={(v) => updateSetting("alwaysShowTabAge", v)} />
+                }
+              />
             </section>
 
             <section className="mb-8">
