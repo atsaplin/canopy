@@ -57,7 +57,3 @@ src/
 ## Privacy
 
 All data stays local in `chrome.storage`. No external servers, no tracking, no analytics. See [Privacy Policy](store/PRIVACY_POLICY.md).
-
-## License
-
-MIT
