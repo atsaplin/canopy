@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 
 function HelloCanopy() {
   return <div>Hello Canopy</div>;
@@ -7,7 +7,7 @@ function HelloCanopy() {
 
 describe("Smoke test", () => {
   it("renders Hello Canopy", () => {
-    render(<HelloCanopy />);
-    expect(screen.getByText("Hello Canopy")).toBeInTheDocument();
+    const { getByText } = render(<HelloCanopy />);
+    expect(getByText("Hello Canopy")).toBeInTheDocument();
   });
 });

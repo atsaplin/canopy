@@ -51,13 +51,6 @@ function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleString();
 }
 
-function countAllNodes(nodes: SessionNode[]): number {
-  let count = 0;
-  for (const node of nodes) {
-    count += 1 + countAllNodes(node.nodes);
-  }
-  return count;
-}
 
 export function OptionsApp() {
   const [activeTab, setActiveTab] = useState<TabName>("general");
