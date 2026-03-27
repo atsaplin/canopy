@@ -1,17 +1,17 @@
 # Canopy — Tree Style Tabs for Chrome
 
-A Chrome extension that organizes your tabs as a tree in the side panel — with drag-and-drop hierarchy, session save/restore, AI context export, and tab decay visualization.
+A Chrome extension that organizes your tabs as a tree in the side panel — with drag-and-drop hierarchy, session save/restore, AI context export, and tab staleness tracking.
 
 ## Features
 
 - **Tree View** — Tabs displayed as an indented tree with parent-child relationships, collapsible subtrees, and drag-and-drop reordering
 - **Session Management** — Save, restore, export, and import tab sessions as portable JSON files
 - **Multi-Select** — Click, Shift+click range, Ctrl/Cmd+click toggle for bulk operations
-- **AI Context Export** — One-click copy of your tab tree as structured markdown for AI assistants
-- **Tab Decay** — Unused tabs dim over time so you can spot forgotten tabs at a glance
-- **Search** — Instant regex search across tabs and bookmarks with a command palette popup
-- **Keyboard Navigation** — Full arrow key navigation, Enter to activate, Delete to close
-- **Two UIs** — Side panel (Alt+S) for the full tree, popup (Alt+Q) for quick switching
+- **Copy & Export** — One-click copy as JSON or as structured markdown for AI assistants
+- **Tab Staleness** — Tabs dim after a configurable threshold with relative timestamps (e.g. "2h", "3d")
+- **Search** — Instant search across tabs and bookmarks with keyboard-navigable results
+- **Keyboard Driven** — Alt+S toggles the panel, arrow keys navigate, Enter activates, Delete closes
+- **Settings** — Configurable indent size, stale threshold, decay indicators, and close confirmation
 - **Dark/Light Mode** — Follows your system preference
 - **Extension API** — Other extensions can query and interact with Canopy's tab tree
 
@@ -50,7 +50,7 @@ Vite 6 · CRXJS · React 19 · TypeScript · Zustand · Tailwind CSS 4 · dnd-ki
 src/
 ├── core/          # Pure functions — tree building, search, serialization (no Chrome/React)
 ├── background/    # Service worker — storage, events, message handling
-├── ui/            # React — side panel, popup, components, stores
+├── ui/            # React — side panel, options, onboarding, components, stores
 └── shared/        # Typed messages and events
 ```
 
