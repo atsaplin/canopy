@@ -44,6 +44,7 @@ export function SearchInput() {
         placeholder="Search tabs..."
         defaultValue={searchKeyword}
         onChange={handleChange}
+        data-search-input
         className="flex-1 bg-transparent border-none outline-none text-[13px]
           text-[var(--color-fg)] placeholder:text-[var(--color-muted)]"
         autoFocus

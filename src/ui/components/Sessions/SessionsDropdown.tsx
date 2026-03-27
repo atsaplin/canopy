@@ -85,6 +85,7 @@ export function SessionsDropdown() {
 
       {/* Save button */}
       <button
+        data-save-session
         onClick={() => setIsSaveOpen(true)}
         className="flex items-center px-1.5 py-0.5 text-[12px] text-[var(--color-muted)]
           hover:text-[var(--color-fg)] hover:bg-[var(--color-hover)] rounded transition-colors"

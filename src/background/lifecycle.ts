@@ -4,15 +4,10 @@ import type { StorageManager } from "@background/storage/StorageManager";
 export function setupLifecycle(storage: StorageManager): void {
   chrome.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === "install") {
-      // Open side panel on first install
-      try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.windowId) {
-          await chrome.sidePanel.open({ windowId: tab.windowId });
-        }
-      } catch {
-        // Side panel may not be available in all contexts
-      }
+      // Open onboarding page on first install
+      chrome.tabs.create({
+        url: chrome.runtime.getURL("src/ui/onboarding/index.html"),
+      });
     }
 
     if (details.reason === "update") {

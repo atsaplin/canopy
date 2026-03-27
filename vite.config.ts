@@ -17,5 +17,10 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
+    rollupOptions: {
+      input: {
+        onboarding: resolve(__dirname, "src/ui/onboarding/index.html"),
+      },
+    },
   },
 });

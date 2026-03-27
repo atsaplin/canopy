@@ -30,6 +30,7 @@ export function ContextDumpButton() {
 
   return (
     <button
+      data-context-dump
       onClick={handleCopyContext}
       className={`flex items-center gap-1 px-1.5 py-0.5 text-[12px] rounded transition-colors
         ${copied

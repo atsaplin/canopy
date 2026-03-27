@@ -1,8 +1,8 @@
 import { createRoot } from "react-dom/client";
 import "@ui/styles/globals.css";
-import { PopupApp } from "./App";
+import { OptionsApp } from "./OptionsApp";
 
 const root = document.getElementById("root");
 if (root) {
-  createRoot(root).render(<PopupApp />);
+  createRoot(root).render(<OptionsApp />);
 }

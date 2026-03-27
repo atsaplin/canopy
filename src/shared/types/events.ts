@@ -37,6 +37,7 @@ export type DomainEvent =
   | { type: "PARENT_MAP_CHANGED"; parentMap: Record<number, number> }
   | { type: "SESSION_SAVED"; id: string; name: string }
   | { type: "SESSION_DELETED"; id: string }
+  | { type: "COMMAND"; command: string }
   | { type: "SW_READY" };
 
 /** Check if a message is a domain event. */

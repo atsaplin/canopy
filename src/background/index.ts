@@ -26,9 +26,35 @@ setupMessageHandler(tracker, storage);
 // Set up external extension API
 setupAPIHandler(tracker, storage);
 
-// Handle side panel open command
+// Open side panel when extension icon is clicked
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    if (tab.windowId !== undefined) {
+      await chrome.sidePanel.open({ windowId: tab.windowId });
+    }
+  } catch {
+    // Side panel may not be available
+  }
+});
+
+// Handle special messages from onboarding/options pages
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.action === "OPEN_SIDE_PANEL") {
+    chrome.windows.getCurrent().then(async (window) => {
+      if (window.id !== undefined) {
+        await chrome.sidePanel.open({ windowId: window.id });
+      }
+      sendResponse({ success: true });
+    }).catch(() => sendResponse({ success: false }));
+    return true;
+  }
+  return false;
+});
+
+// Handle keyboard shortcut commands
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command === "open-side-panel") {
+  if (command === "focus-search" || command === "copy-context" || command === "save-session") {
+    // Open side panel first, then broadcast the command to the UI
     try {
       const window = await chrome.windows.getCurrent();
       if (window.id !== undefined) {
@@ -37,6 +63,8 @@ chrome.commands.onCommand.addListener(async (command) => {
     } catch {
       // Side panel may not be available
     }
+    // Broadcast the command so the side panel UI can handle it
+    broadcast({ type: "COMMAND", command });
   }
 });
 
