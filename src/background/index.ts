@@ -126,10 +126,6 @@ chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Track URL changes for undo-close restoration
-  if (changeInfo.url) {
-    tracker.trackTabUrl(tabId, changeInfo.url);
-  }
   broadcast({ type: "TAB_UPDATED", tabId, changeInfo, tab });
 });
 
