@@ -1,30 +1,9 @@
 import { useState, useEffect } from "react";
+import { useSettingsStore, DEFAULT_SETTINGS, type Settings } from "@ui/stores/settingsStore";
+import type { SessionData, SessionNode } from "@core/types";
+import { exportSessionAsFile, importSessionFromFile } from "@ui/utils/fileHelpers";
 
 type TabName = "general" | "hotkeys" | "sessions" | "about";
-
-interface Settings {
-  showDecayIndicators: boolean;
-  decayWarmHours: number;
-  decayStaleHours: number;
-  decayDecayedHours: number;
-  autoCollapseInactive: boolean;
-  closePromotesChildren: boolean;
-  showFavicons: boolean;
-  indentSize: number;
-  confirmCloseTree: boolean;
-}
-
-const DEFAULT_SETTINGS: Settings = {
-  showDecayIndicators: true,
-  decayWarmHours: 6,
-  decayStaleHours: 24,
-  decayDecayedHours: 72,
-  autoCollapseInactive: false,
-  closePromotesChildren: true,
-  showFavicons: true,
-  indentSize: 16,
-  confirmCloseTree: false,
-};
 
 interface SessionListItem {
   id: string;
@@ -33,29 +12,13 @@ interface SessionListItem {
   nodeCount: number;
 }
 
-interface SessionNode {
-  url: string;
-  title: string;
-  group?: { name: string; color: string };
-  nodes: SessionNode[];
-}
-
-interface SessionData {
-  name: string;
-  savedAt: string;
-  version: number;
-  nodes: SessionNode[];
-}
-
 function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleString();
 }
 
-
 export function OptionsApp() {
   const [activeTab, setActiveTab] = useState<TabName>("general");
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-  const [saved, setSaved] = useState(false);
+  const settings = useSettingsStore();
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [sessionData, setSessionData] = useState<Record<string, SessionData>>({});
@@ -63,17 +26,13 @@ export function OptionsApp() {
 
   // Load settings on mount
   useEffect(() => {
-    chrome.storage.local.get("canopy_settings").then((result) => {
-      if (result.canopy_settings) {
-        setSettings({ ...DEFAULT_SETTINGS, ...result.canopy_settings });
-      }
-    });
+    settings.loadSettings();
     chrome.storage.local.getBytesInUse(null).then((bytes) => {
       if (bytes < 1024) setStorageUsage(`${bytes} B`);
       else if (bytes < 1024 * 1024) setStorageUsage(`${(bytes / 1024).toFixed(1)} KB`);
       else setStorageUsage(`${(bytes / (1024 * 1024)).toFixed(1)} MB`);
     });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load sessions when tab changes
   useEffect(() => {
@@ -86,14 +45,12 @@ export function OptionsApp() {
     }
   }, [activeTab]);
 
-  const handleSave = async () => {
-    await chrome.storage.local.set({ canopy_settings: settings });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleReset = async () => {
+    await settings.updateSettings(DEFAULT_SETTINGS);
   };
 
-  const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
-    setSettings((s) => ({ ...s, [key]: value }));
+  const updateSetting = async <K extends keyof Settings>(key: K, value: Settings[K]) => {
+    await settings.updateSettings({ [key]: value });
   };
 
   const loadSessionData = async (id: string) => {
@@ -106,15 +63,9 @@ export function OptionsApp() {
 
   const handleExportSession = async (id: string) => {
     const response = await chrome.runtime.sendMessage({ action: "GET_SESSION", id });
-    if (!response?.success || !response.data?.session) return;
-    const session = response.data.session as SessionData;
-    const blob = new Blob([JSON.stringify(session, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${session.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (response?.success && response.data?.session) {
+      exportSessionAsFile(response.data.session);
+    }
   };
 
   const handleExportAll = async () => {
@@ -130,6 +81,16 @@ export function OptionsApp() {
     a.download = `canopy-all-sessions-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async () => {
+    const session = await importSessionFromFile();
+    if (session) {
+      await chrome.runtime.sendMessage({ action: "IMPORT_SESSION", session });
+      // Reload sessions list
+      const response = await chrome.runtime.sendMessage({ action: "LIST_SESSIONS" });
+      if (response?.success) setSessions(response.data.sessions);
+    }
   };
 
   const handleDeleteSession = async (id: string) => {
@@ -211,14 +172,6 @@ export function OptionsApp() {
               </h2>
 
               <SettingRow
-                label="Show favicons"
-                description="Display website icons next to tab titles"
-                control={
-                  <Toggle checked={settings.showFavicons} onChange={(v) => updateSetting("showFavicons", v)} />
-                }
-              />
-
-              <SettingRow
                 label="Indent size"
                 description="Pixels of indentation per tree level"
                 control={
@@ -231,36 +184,6 @@ export function OptionsApp() {
                     <option value={16}>16px (default)</option>
                     <option value={24}>24px (spacious)</option>
                   </select>
-                }
-              />
-
-              <SettingRow
-                label="Auto-collapse inactive branches"
-                description="Collapse branches when you switch to a different subtree"
-                control={
-                  <Toggle checked={settings.autoCollapseInactive} onChange={(v) => updateSetting("autoCollapseInactive", v)} />
-                }
-              />
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-[15px] font-medium mb-4 pb-2 border-b border-[var(--color-border)]">
-                Tab Behavior
-              </h2>
-
-              <SettingRow
-                label="Close promotes children"
-                description="When closing a parent tab, move its children up to the grandparent"
-                control={
-                  <Toggle checked={settings.closePromotesChildren} onChange={(v) => updateSetting("closePromotesChildren", v)} />
-                }
-              />
-
-              <SettingRow
-                label="Confirm close tree"
-                description='Show a confirmation dialog when using "Close tree" from the context menu'
-                control={
-                  <Toggle checked={settings.confirmCloseTree} onChange={(v) => updateSetting("confirmCloseTree", v)} />
                 }
               />
             </section>
@@ -277,67 +200,27 @@ export function OptionsApp() {
                   <Toggle checked={settings.showDecayIndicators} onChange={(v) => updateSetting("showDecayIndicators", v)} />
                 }
               />
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-[15px] font-medium mb-4 pb-2 border-b border-[var(--color-border)]">
+                Safety
+              </h2>
 
               <SettingRow
-                label="Warm threshold"
-                description="Tabs start dimming after this many hours of inactivity"
+                label="Confirm close tree"
+                description='Show a confirmation dialog when using "Close tree" from the context menu'
                 control={
-                  <select
-                    value={settings.decayWarmHours}
-                    onChange={(e) => updateSetting("decayWarmHours", Number(e.target.value))}
-                    className="bg-[var(--color-hover)] border border-[var(--color-border)] rounded px-2 py-1 text-[13px] text-[var(--color-fg)]"
-                  >
-                    <option value={1}>1 hour</option>
-                    <option value={3}>3 hours</option>
-                    <option value={6}>6 hours</option>
-                    <option value={12}>12 hours</option>
-                  </select>
-                }
-              />
-
-              <SettingRow
-                label="Stale threshold"
-                description="Tabs are marked stale after this many hours"
-                control={
-                  <select
-                    value={settings.decayStaleHours}
-                    onChange={(e) => updateSetting("decayStaleHours", Number(e.target.value))}
-                    className="bg-[var(--color-hover)] border border-[var(--color-border)] rounded px-2 py-1 text-[13px] text-[var(--color-fg)]"
-                  >
-                    <option value={12}>12 hours</option>
-                    <option value={24}>24 hours</option>
-                    <option value={48}>48 hours</option>
-                  </select>
-                }
-              />
-
-              <SettingRow
-                label="Decayed threshold"
-                description="Tabs are fully decayed after this many hours"
-                control={
-                  <select
-                    value={settings.decayDecayedHours}
-                    onChange={(e) => updateSetting("decayDecayedHours", Number(e.target.value))}
-                    className="bg-[var(--color-hover)] border border-[var(--color-border)] rounded px-2 py-1 text-[13px] text-[var(--color-fg)]"
-                  >
-                    <option value={48}>48 hours</option>
-                    <option value={72}>72 hours</option>
-                    <option value={168}>1 week</option>
-                  </select>
+                  <Toggle checked={settings.confirmCloseTree} onChange={(v) => updateSetting("confirmCloseTree", v)} />
                 }
               />
             </section>
 
-            {/* Save button */}
-            <div className="flex items-center gap-3 pt-4 border-t border-[var(--color-border)]">
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-4 border-t border-[var(--color-border)]">
+              <p className="text-[12px] text-[var(--color-muted)]">Settings are saved automatically.</p>
               <button
-                onClick={handleSave}
-                className="px-6 py-2 text-[13px] rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors cursor-pointer border-none font-medium"
-              >
-                {saved ? "Saved!" : "Save settings"}
-              </button>
-              <button
-                onClick={() => setSettings(DEFAULT_SETTINGS)}
+                onClick={handleReset}
                 className="px-4 py-2 text-[13px] rounded-md border border-[var(--color-border)] bg-transparent text-[var(--color-fg)] hover:bg-[var(--color-hover)] transition-colors cursor-pointer"
               >
                 Reset to defaults
@@ -402,12 +285,17 @@ export function OptionsApp() {
         {activeTab === "sessions" && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-[13px] text-[var(--color-muted)]">
-                  {sessions.length} saved session{sessions.length !== 1 ? "s" : ""} &middot; {storageUsage} used
-                </p>
-              </div>
+              <p className="text-[13px] text-[var(--color-muted)]">
+                {sessions.length} saved session{sessions.length !== 1 ? "s" : ""} &middot; {storageUsage} used
+              </p>
               <div className="flex gap-2">
+                <button
+                  onClick={handleImport}
+                  className="px-3 py-1.5 text-[12px] rounded-md border border-[var(--color-border)] bg-transparent
+                    text-[var(--color-fg)] hover:bg-[var(--color-hover)] transition-colors cursor-pointer"
+                >
+                  Import .json
+                </button>
                 <button
                   onClick={handleExportAll}
                   disabled={sessions.length === 0}
@@ -416,38 +304,6 @@ export function OptionsApp() {
                     disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Export all
-                </button>
-                <button
-                  onClick={async () => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = ".json";
-                    input.onchange = async () => {
-                      const file = input.files?.[0];
-                      if (!file) return;
-                      const text = await file.text();
-                      try {
-                        const data = JSON.parse(text);
-                        // Handle both single session and array of sessions
-                        const sessionsToImport = Array.isArray(data) ? data : [data];
-                        for (const session of sessionsToImport) {
-                          if (session.name && session.nodes) {
-                            await chrome.runtime.sendMessage({ action: "IMPORT_SESSION", session });
-                          }
-                        }
-                        // Reload sessions list
-                        const response = await chrome.runtime.sendMessage({ action: "LIST_SESSIONS" });
-                        if (response?.success) setSessions(response.data.sessions);
-                      } catch {
-                        alert("Invalid session file.");
-                      }
-                    };
-                    input.click();
-                  }}
-                  className="px-3 py-1.5 text-[12px] rounded-md border border-[var(--color-border)] bg-transparent
-                    text-[var(--color-fg)] hover:bg-[var(--color-hover)] transition-colors cursor-pointer"
-                >
-                  Import .json
                 </button>
               </div>
             </div>
@@ -464,7 +320,6 @@ export function OptionsApp() {
                     key={session.id}
                     className="border border-[var(--color-border)] rounded-lg overflow-hidden"
                   >
-                    {/* Session header */}
                     <div
                       className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--color-hover)] transition-colors"
                       onClick={() => {
@@ -488,7 +343,6 @@ export function OptionsApp() {
                           className="px-2 py-1 text-[11px] rounded border border-[var(--color-border)]
                             text-[var(--color-muted)] hover:text-[var(--color-fg)] hover:bg-[var(--color-hover)]
                             transition-colors cursor-pointer bg-transparent"
-                          title="Export"
                         >
                           Export
                         </button>
@@ -499,14 +353,12 @@ export function OptionsApp() {
                           }}
                           className="px-2 py-1 text-[11px] rounded border border-red-500/30
                             text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer bg-transparent"
-                          title="Delete"
                         >
                           Delete
                         </button>
                       </div>
                     </div>
 
-                    {/* Expanded session tree */}
                     {expandedSession === session.id && (
                       <div className="border-t border-[var(--color-border)] bg-[var(--color-hover)] px-2 py-2 max-h-[300px] overflow-y-auto">
                         {sessionData[session.id] ? (
@@ -602,7 +454,6 @@ export function OptionsApp() {
   );
 }
 
-/** A single setting row with label, description, and control. */
 function SettingRow({ label, description, control }: { label: string; description: string; control: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between py-3">
@@ -615,7 +466,6 @@ function SettingRow({ label, description, control }: { label: string; descriptio
   );
 }
 
-/** Toggle switch component. */
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
@@ -631,7 +481,6 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   );
 }
 
-/** A single hotkey row in the Obsidian Clipper style. */
 function HotkeyRow({ label, keys, configurable }: { label: string; keys: string | string[]; configurable?: boolean }) {
   const keyArray = Array.isArray(keys) ? keys : [keys];
   return (

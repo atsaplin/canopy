@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { Tab } from "@core/types";
 import { useTabStore } from "@ui/stores/tabStore";
+import { useSettingsStore } from "@ui/stores/settingsStore";
 import { getDescendantsFromParentMap } from "@ui/utils/closeHelpers";
 import { findNodeById } from "@core/TabTreeNode";
 import { serializeNodes } from "@core/SessionSerializer";
@@ -82,9 +83,15 @@ export function TabContextMenu({ tab, x, y, onClose }: TabContextMenuProps) {
     {
       label: "Close tree",
       action: () => {
-        // Close this tab + all descendants
+        const { confirmCloseTree } = useSettingsStore.getState();
         const { tree, parentMap } = useTabStore.getState();
         const descendantIds = getDescendantsFromParentMap(tab.id, tree, parentMap);
+        if (confirmCloseTree && descendantIds.length > 0) {
+          if (!confirm(`Close this tab and ${descendantIds.length} descendant${descendantIds.length > 1 ? "s" : ""}?`)) {
+            onClose();
+            return;
+          }
+        }
         chrome.runtime.sendMessage({ action: "CLOSE_TAB_TREE", tabId: tab.id, descendantIds }).catch(() => {});
         onClose();
       },

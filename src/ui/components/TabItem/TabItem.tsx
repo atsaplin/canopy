@@ -1,8 +1,19 @@
 import { useState, useCallback } from "react";
 import type { FlatTreeItem } from "@core/types";
 import { useTabStore } from "@ui/stores/tabStore";
+import { useSettingsStore } from "@ui/stores/settingsStore";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { TabContextMenu } from "@ui/components/ContextMenu/TabContextMenu";
+
+function formatRelativeTime(timestamp: number): string {
+  const diffMs = Date.now() - timestamp;
+  const minutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(diffMs / 3600000);
+  const days = Math.floor(diffMs / 86400000);
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) return `${hours}h`;
+  return `${days}d`;
+}
 
 interface TabItemProps {
   item: FlatTreeItem;
@@ -15,6 +26,9 @@ export function TabItem({ item }: TabItemProps) {
   const selectNode = useTabStore((s) => s.selectNode);
   const selectedIds = useTabStore((s) => s.selectedIds);
   const tabDecayMap = useTabStore((s) => s.tabDecayMap);
+  const tabActivityMap = useTabStore((s) => s.tabActivityMap);
+  const indentSize = useSettingsStore((s) => s.indentSize);
+  const showDecayIndicators = useSettingsStore((s) => s.showDecayIndicators);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   const tab = node.tab;
@@ -24,8 +38,10 @@ export function TabItem({ item }: TabItemProps) {
   const isSelected = selectedIds.has(node.id);
   const hasChildren = descendantCount > 0;
   const decayLevel = tabDecayMap[tab.id] ?? "fresh";
-  const decayOpacity = decayLevel === "decayed" ? "opacity-40" : decayLevel === "stale" ? "opacity-60" : decayLevel === "warm" ? "opacity-80" : "";
-  const paddingLeft = depth * 16 + 8;
+  const decayOpacity = showDecayIndicators
+    ? (decayLevel === "decayed" ? "opacity-40" : decayLevel === "stale" ? "opacity-60" : decayLevel === "warm" ? "opacity-80" : "")
+    : "";
+  const paddingLeft = depth * indentSize + 8;
 
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: node.id,
@@ -124,15 +140,26 @@ export function TabItem({ item }: TabItemProps) {
         {/* Title */}
         <span className="truncate flex-1 text-[13px]">{tab.title}</span>
 
-        {/* Decay indicator */}
-        {(decayLevel === "stale" || decayLevel === "decayed") && (
-          <span
-            className={`text-[10px] shrink-0 ${decayLevel === "decayed" ? "text-orange-400" : "text-yellow-500"}`}
-            title={decayLevel === "decayed" ? "Untouched for 3+ days" : "Untouched for 1+ day"}
-          >
-            {decayLevel === "decayed" ? "💤" : "⏳"}
-          </span>
-        )}
+        {/* Decay indicator with relative time */}
+        {showDecayIndicators && decayLevel !== "fresh" && (() => {
+          const lastAccessed = tabActivityMap[tab.id];
+          const relTime = lastAccessed ? formatRelativeTime(lastAccessed) : "";
+          if (decayLevel === "warm") {
+            return relTime ? (
+              <span className="text-[10px] shrink-0 text-[var(--color-muted)]" title={`Last visited ${relTime}`}>
+                {relTime}
+              </span>
+            ) : null;
+          }
+          return (
+            <span
+              className={`text-[10px] shrink-0 ${decayLevel === "decayed" ? "text-orange-400" : "text-yellow-500"}`}
+              title={`Last visited ${relTime}`}
+            >
+              {decayLevel === "decayed" ? "💤" : "⏳"} {relTime}
+            </span>
+          );
+        })()}
 
         {/* Child count badge */}
         {hasChildren && !isExpanded && (

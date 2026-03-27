@@ -32,6 +32,7 @@ interface TabState {
   selectedIds: Set<string>;
   lastSelectedId: string | null;
   tabDecayMap: Record<number, DecayLevel>;
+  tabActivityMap: Record<number, number>; // tabId -> last accessed timestamp
 
   // Actions
   setTabs: (tabs: Tab[]) => void;
@@ -62,6 +63,7 @@ export const useTabStore = create<TabState>((set, get) => ({
   selectedIds: new Set<string>(),
   lastSelectedId: null,
   tabDecayMap: {},
+  tabActivityMap: {},
 
   setTabs: (tabs) => {
     const state = get();
@@ -181,6 +183,6 @@ export const useTabStore = create<TabState>((set, get) => ({
     for (const [tabIdStr, lastAccessed] of Object.entries(activity)) {
       decayMap[Number(tabIdStr)] = getDecayLevel(lastAccessed, now);
     }
-    set({ tabDecayMap: decayMap });
+    set({ tabDecayMap: decayMap, tabActivityMap: activity });
   },
 }));
