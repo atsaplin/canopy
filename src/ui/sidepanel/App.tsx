@@ -33,15 +33,43 @@ export function App() {
   useEffect(() => {
     loadSettings();
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
-      if (area === "local" && changes.canopy_settings) {
+      if (area !== "local") return;
+      if (changes.canopy_settings) {
         loadSettings().then(() => {
-          // Recompute decay map with new threshold
           const { tabActivityMap } = useTabStore.getState();
           const { staleThresholdHours } = useSettingsStore.getState();
           if (Object.keys(tabActivityMap).length > 0) {
             useTabStore.getState().updateDecayMap(tabActivityMap, staleThresholdHours);
           }
         });
+      }
+      // Handle global shortcut commands via storage (more reliable than broadcast)
+      if (changes.canopy_command?.newValue) {
+        const { command } = changes.canopy_command.newValue as { command: string };
+        if (command === "focus-search") {
+          // Retry focus with delays to handle panel still rendering
+          const tryFocus = (attempts: number) => {
+            if (attempts <= 0) return;
+            setTimeout(() => {
+              const input = document.querySelector<HTMLInputElement>("[data-search-input]");
+              if (input) {
+                input.focus();
+                input.select();
+              } else {
+                tryFocus(attempts - 1);
+              }
+            }, attempts === 3 ? 50 : 200);
+          };
+          tryFocus(3);
+        } else if (command === "copy-context") {
+          const btn = document.querySelector<HTMLButtonElement>("[data-context-dump]");
+          btn?.click();
+        } else if (command === "save-session") {
+          const btn = document.querySelector<HTMLButtonElement>("[data-save-session]");
+          btn?.click();
+        }
+        // Clean up the command signal
+        chrome.storage.local.remove("canopy_command").catch(() => {});
       }
     };
     chrome.storage.onChanged.addListener(handleStorageChange);

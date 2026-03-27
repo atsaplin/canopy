@@ -85,9 +85,9 @@ chrome.commands.onCommand.addListener(async (command) => {
     } catch {
       // Side panel may not be available
     }
-    // Wait for the side panel React app to mount and register its listener
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    broadcast({ type: "COMMAND", command });
+    // Signal the command via storage — more reliable than broadcast since
+    // storage change events are guaranteed to reach open extension pages
+    await chrome.storage.local.set({ canopy_command: { command, timestamp: Date.now() } });
   }
 });
 

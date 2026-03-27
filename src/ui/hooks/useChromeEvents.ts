@@ -145,21 +145,6 @@ export function useChromeEvents() {
         case "PARENT_MAP_CHANGED":
           setParentMap(event.parentMap);
           break;
-        case "COMMAND":
-          if (event.command === "focus-search") {
-            // Focus the search input in the side panel
-            const searchInput = document.querySelector<HTMLInputElement>("[data-search-input]");
-            searchInput?.focus();
-          } else if (event.command === "copy-context") {
-            // Trigger context dump button click
-            const contextBtn = document.querySelector<HTMLButtonElement>("[data-context-dump]");
-            contextBtn?.click();
-          } else if (event.command === "save-session") {
-            // Trigger save session button click
-            const saveBtn = document.querySelector<HTMLButtonElement>("[data-save-session]");
-            saveBtn?.click();
-          }
-          break;
       }
     }
 

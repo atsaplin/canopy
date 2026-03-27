@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef } from "react";
 import { useTabStore } from "@ui/stores/tabStore";
 
 export function SearchInput() {
@@ -6,31 +6,6 @@ export function SearchInput() {
   const setSearchKeyword = useTabStore((s) => s.setSearchKeyword);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Listen for focus-search command — retry focus until it works
-  useEffect(() => {
-    const handler = (message: unknown) => {
-      const msg = message as { type?: string; command?: string } | undefined;
-      if (msg?.type === "COMMAND" && msg?.command === "focus-search") {
-        // Retry focus with increasing delays to handle panel opening
-        const tryFocus = (attempts: number) => {
-          if (attempts <= 0) return;
-          setTimeout(() => {
-            const input = inputRef.current ?? document.querySelector<HTMLInputElement>("[data-search-input]");
-            if (input) {
-              input.focus();
-              input.select();
-            } else {
-              tryFocus(attempts - 1);
-            }
-          }, attempts === 3 ? 100 : 300);
-        };
-        tryFocus(3);
-      }
-    };
-    chrome.runtime.onMessage.addListener(handler);
-    return () => chrome.runtime.onMessage.removeListener(handler);
-  }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
