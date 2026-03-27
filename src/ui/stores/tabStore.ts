@@ -33,7 +33,6 @@ interface TabState {
   lastSelectedId: string | null;
   tabDecayMap: Record<number, DecayLevel>;
   tabActivityMap: Record<number, number>; // tabId -> last accessed timestamp
-  searchFocusRequested: number; // timestamp — increment to trigger focus
 
   // Actions
   setTabs: (tabs: Tab[]) => void;
@@ -65,7 +64,6 @@ export const useTabStore = create<TabState>((set, get) => ({
   lastSelectedId: null,
   tabDecayMap: {},
   tabActivityMap: {},
-  searchFocusRequested: 0,
 
   setTabs: (tabs) => {
     const state = get();

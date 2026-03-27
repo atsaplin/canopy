@@ -40,8 +40,6 @@ chrome.action.onClicked.addListener(async (tab) => {
     } else {
       await chrome.sidePanel.open({ windowId: tab.windowId });
       sidePanelOpen.set(tab.windowId, true);
-      // Focus search input after opening
-      await chrome.storage.local.set({ canopy_command: { command: "focus-search", timestamp: Date.now() } });
     }
   } catch {
     // Side panel may not be available

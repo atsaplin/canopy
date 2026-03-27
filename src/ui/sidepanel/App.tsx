@@ -43,20 +43,16 @@ export function App() {
           }
         });
       }
-      // Handle global shortcut commands via storage (more reliable than broadcast)
+      // Handle global shortcut commands via storage
       if (changes.canopy_command?.newValue) {
         const { command } = changes.canopy_command.newValue as { command: string };
-        if (command === "focus-search") {
-          // Use React state to trigger focus — direct focus() is blocked without user gesture
-          useTabStore.setState({ searchFocusRequested: Date.now() });
-        } else if (command === "copy-context") {
+        if (command === "copy-context") {
           const btn = document.querySelector<HTMLButtonElement>("[data-context-dump]");
           btn?.click();
         } else if (command === "save-session") {
           const btn = document.querySelector<HTMLButtonElement>("[data-save-session]");
           btn?.click();
         }
-        // Clean up the command signal
         chrome.storage.local.remove("canopy_command").catch(() => {});
       }
     };
