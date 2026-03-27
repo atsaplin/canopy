@@ -160,32 +160,27 @@ export function TabContextMenu({ tab, x, y, onClose }: TabContextMenuProps) {
       },
     },
     {
-      label: "Copy tree as JSON",
+      label: "Copy as JSON",
       action: () => {
-        const { tree } = useTabStore.getState();
-        const treeNode = findNodeById(tree, String(tab.id));
-        if (treeNode) {
-          const sessionNodes = serializeNodes([treeNode]);
+        const { tree, selectedIds } = useTabStore.getState();
+        let nodes;
+        if (selectedIds.size > 1 && selectedIds.has(String(tab.id))) {
+          // Multi-select: copy all selected nodes
+          nodes = Array.from(selectedIds)
+            .map((id) => findNodeById(tree, id))
+            .filter((n): n is NonNullable<typeof n> => n !== undefined);
+        } else {
+          // Single: copy this tab's subtree
+          const treeNode = findNodeById(tree, String(tab.id));
+          nodes = treeNode ? [treeNode] : [];
+        }
+        if (nodes.length > 0) {
+          const sessionNodes = serializeNodes(nodes);
           const json = JSON.stringify(sessionNodes, null, 2);
           navigator.clipboard.writeText(json).catch(() => {});
         }
         onClose();
       },
-    },
-    {
-      label: "Copy selection as JSON",
-      action: () => {
-        const { tree, selectedIds } = useTabStore.getState();
-        if (selectedIds.size === 0) return;
-        const selectedNodes = Array.from(selectedIds)
-          .map((id) => findNodeById(tree, id))
-          .filter((n): n is NonNullable<typeof n> => n !== undefined);
-        const sessionNodes = serializeNodes(selectedNodes);
-        const json = JSON.stringify(sessionNodes, null, 2);
-        navigator.clipboard.writeText(json).catch(() => {});
-        onClose();
-      },
-      hidden: useTabStore.getState().selectedIds.size === 0,
       separator: true,
     },
     {
