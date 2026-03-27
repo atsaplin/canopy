@@ -46,7 +46,7 @@ const steps: Step[] = [
   {
     title: "Save and restore sessions",
     description:
-      "Save your entire tab tree as a named session. Restore it later — either replacing your current tabs or adding alongside them. Export sessions as JSON files to share or back up.",
+      "Save your entire tab tree as a named session with the floppy disk icon. Load previous sessions with the folder icon. Export as JSON to share or back up, and import from files.",
     visual: (
       <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-4 text-[13px]">
         <div className="flex items-center justify-between py-2 border-b border-[var(--color-border)]">
@@ -67,44 +67,53 @@ const steps: Step[] = [
     ),
   },
   {
-    title: "Copy context for AI",
+    title: "Export for AI or as JSON",
     description:
-      'Click the "Copy context for AI" button to export your tab tree as structured markdown — perfect for pasting into ChatGPT, Claude, or any AI assistant. It includes URLs, titles, and the full hierarchy.',
+      "Two copy buttons in the header: the document icon copies your tabs as structured JSON, and the clipboard icon copies as markdown for AI assistants like ChatGPT or Claude. Both are selection-aware — select specific tabs first, or copy everything.",
     visual: (
-      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-4 text-[12px] font-mono text-[var(--color-fg)]">
-        <div className="text-[var(--color-muted)] mb-2"># Browsing Context</div>
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-4 text-[13px] space-y-4">
         <div>
-          <div>{"▸ Research Project"}</div>
-          <div className="ml-4">{"• Wikipedia — Machine Learning"}</div>
-          <div className="ml-4">{"▸ Stack Overflow — Python"}</div>
-          <div className="ml-8">{"• NumPy Documentation"}</div>
-          <div>{"• Email (3 collapsed)"}</div>
+          <div className="text-[var(--color-fg)] font-medium mb-2">Copy as JSON</div>
+          <div className="text-[12px] font-mono text-[var(--color-muted)] bg-[var(--color-hover)] rounded p-2">
+            {"[{ \"url\": \"...\", \"title\": \"...\", \"nodes\": [...] }]"}
+          </div>
         </div>
-        <div className="mt-3 text-[var(--color-muted)]">{"// Each entry includes the full URL"}</div>
+        <div>
+          <div className="text-[var(--color-fg)] font-medium mb-2">Copy context for AI</div>
+          <div className="text-[12px] font-mono text-[var(--color-muted)] bg-[var(--color-hover)] rounded p-2">
+            <div>{"# Browsing Context"}</div>
+            <div>{"▸ Research Project"}</div>
+            <div className="ml-3">{"• Wikipedia — Machine Learning"}</div>
+          </div>
+        </div>
       </div>
     ),
   },
   {
     title: "Spot stale tabs at a glance",
     description:
-      "Tabs you haven't visited in a while automatically dim — warm after 6 hours, stale after a day, decayed after 3 days. Quickly identify tabs you've forgotten about and close what you don't need.",
+      "Tabs you haven't visited in a while automatically dim and show how long ago you last used them. The stale threshold is configurable in settings — default is 24 hours. Quickly spot forgotten tabs and close what you don't need.",
     visual: (
       <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-4 text-[13px] space-y-1.5">
         <div className="flex items-center gap-2 py-1 text-[var(--color-fg)]">
           <span className="w-3 h-3 rounded-sm bg-blue-400 shrink-0" />
-          <span>Active tab — just visited</span>
+          <span className="flex-1">Active tab</span>
+          <span className="text-[10px] text-[var(--color-muted)]">5m</span>
         </div>
-        <div className="flex items-center gap-2 py-1 text-[var(--color-fg)] opacity-80">
+        <div className="flex items-center gap-2 py-1 text-[var(--color-fg)]">
           <span className="w-3 h-3 rounded-sm bg-gray-400 shrink-0" />
-          <span>Warm — visited 6+ hours ago</span>
+          <span className="flex-1">Another tab</span>
+          <span className="text-[10px] text-[var(--color-muted)]">3h</span>
         </div>
-        <div className="flex items-center gap-2 py-1 text-[var(--color-fg)] opacity-60">
+        <div className="flex items-center gap-2 py-1 text-[var(--color-fg)] opacity-50">
           <span className="w-3 h-3 rounded-sm bg-gray-400 shrink-0" />
-          <span className="flex items-center gap-1">Stale — 1+ day ago <span className="text-yellow-500 text-[10px]">⏳</span></span>
+          <span className="flex-1">Forgotten tab</span>
+          <span className="text-[10px] text-yellow-500">⏳ 2d</span>
         </div>
-        <div className="flex items-center gap-2 py-1 text-[var(--color-fg)] opacity-40">
+        <div className="flex items-center gap-2 py-1 text-[var(--color-fg)] opacity-50">
           <span className="w-3 h-3 rounded-sm bg-gray-400 shrink-0" />
-          <span className="flex items-center gap-1">Decayed — 3+ days ago <span className="text-orange-400 text-[10px]">💤</span></span>
+          <span className="flex-1">Really old tab</span>
+          <span className="text-[10px] text-yellow-500">⏳ 5d</span>
         </div>
       </div>
     ),
@@ -112,22 +121,24 @@ const steps: Step[] = [
   {
     title: "You're all set!",
     description:
-      "Click the Canopy icon in your toolbar or press Alt+S to open the side panel. Right-click any tab for more options like Close Tree, Copy URL, or Copy Context for AI.",
+      "Press Alt+S to toggle the side panel open and closed. Use Ctrl+Shift+F (Cmd+Shift+F on Mac) to jump straight to search from any tab. Right-click any tab for more options.",
     visual: (
       <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-4 text-[13px] space-y-3">
         <div className="text-[var(--color-fg)] font-medium">Keyboard shortcuts</div>
         <div className="space-y-2">
           {[
-            ["Alt + S", "Open/close side panel"],
-            ["↑ ↓", "Navigate tabs"],
-            ["← →", "Collapse/expand or jump to parent"],
+            ["Alt + S", "Toggle side panel"],
+            ["Ctrl/⌘ + Shift + F", "Search tabs"],
+            ["↑ ↓", "Navigate tabs / search results"],
+            ["← →", "Collapse/expand tree"],
             ["Enter", "Activate selected tab"],
             ["Delete", "Close selected tab"],
+            ["Escape", "Clear search / close menu"],
             ["Shift + Click", "Range select"],
             ["Ctrl/⌘ + Click", "Toggle select"],
           ].map(([key, desc]) => (
             <div key={key} className="flex items-center gap-3">
-              <kbd className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--color-hover)] border border-[var(--color-border)] text-[var(--color-fg)] font-mono min-w-[80px] text-center">
+              <kbd className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--color-hover)] border border-[var(--color-border)] text-[var(--color-fg)] font-mono min-w-[105px] text-center">
                 {key}
               </kbd>
               <span className="text-[var(--color-muted)]">{desc}</span>
@@ -146,7 +157,6 @@ export function OnboardingApp() {
 
   const handleNext = () => {
     if (isLast) {
-      // Open side panel and close this tab
       chrome.runtime.sendMessage({ action: "OPEN_SIDE_PANEL" }).catch(() => {});
       window.close();
     } else {
