@@ -4,7 +4,7 @@ const manifest: ManifestV3Export = {
   manifest_version: 3,
   name: "Canopy",
   short_name: "Canopy",
-  version: "3.1.0",
+  version: "3.0.0",
   description:
     "A tree-style tab viewer with agent-aware browsing and session intelligence",
   permissions: ["bookmarks", "tabs", "tabGroups", "storage", "sidePanel"],
