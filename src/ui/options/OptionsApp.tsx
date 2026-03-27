@@ -16,6 +16,7 @@ export function OptionsApp() {
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [sessionData, setSessionData] = useState<Record<string, SessionData>>({});
   const [storageUsage, setStorageUsage] = useState("");
+  const [commandShortcuts, setCommandShortcuts] = useState<Record<string, string>>({});
 
   // Load settings on mount
   useEffect(() => {
@@ -26,6 +27,19 @@ export function OptionsApp() {
       else setStorageUsage(`${(bytes / (1024 * 1024)).toFixed(1)} MB`);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load actual keyboard shortcut assignments from Chrome
+  useEffect(() => {
+    chrome.commands.getAll().then((commands) => {
+      const map: Record<string, string> = {};
+      for (const cmd of commands) {
+        if (cmd.name && cmd.shortcut) {
+          map[cmd.name] = cmd.shortcut;
+        }
+      }
+      setCommandShortcuts(map);
+    });
+  }, []);
 
   // Load sessions when tab changes
   useEffect(() => {
@@ -269,10 +283,10 @@ export function OptionsApp() {
               <p className="text-[12px] text-[var(--color-muted)] mb-4">
                 These shortcuts are configurable via Chrome's extension shortcuts page.
               </p>
-              <HotkeyRow label="Open side panel" keys="Alt + S" configurable />
-              <HotkeyRow label="Focus search" keys="Ctrl + Shift + F" configurable />
-              <HotkeyRow label="Copy context for AI" keys="Alt + C" configurable />
-              <HotkeyRow label="Save session" keys="Not set" configurable />
+              <HotkeyRow label="Toggle side panel" keys={commandShortcuts["_execute_action"] || "Not set"} configurable />
+              <HotkeyRow label="Focus search" keys={commandShortcuts["focus-search"] || "Not set"} configurable />
+              <HotkeyRow label="Copy context for AI" keys={commandShortcuts["copy-context"] || "Not set"} configurable />
+              <HotkeyRow label="Save session" keys={commandShortcuts["save-session"] || "Not set"} configurable />
             </section>
 
             <section className="mb-8">

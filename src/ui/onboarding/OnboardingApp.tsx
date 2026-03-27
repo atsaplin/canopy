@@ -121,14 +121,14 @@ const steps: Step[] = [
   {
     title: "You're all set!",
     description:
-      "Press Alt+S to toggle the side panel open and closed. Use Ctrl+Shift+F (Cmd+Shift+F on Mac) to jump straight to search from any tab. Right-click any tab for more options.",
+      "Press Alt+S to toggle the side panel open and closed. Use Alt+F to jump straight to search from any tab. Right-click any tab for more options.",
     visual: (
       <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-4 text-[13px] space-y-3">
         <div className="text-[var(--color-fg)] font-medium">Keyboard shortcuts</div>
         <div className="space-y-2">
           {[
             ["Alt + S", "Toggle side panel"],
-            ["Ctrl/⌘ + Shift + F", "Search tabs"],
+            ["Alt + F", "Search tabs"],
             ["↑ ↓", "Navigate tabs / search results"],
             ["← →", "Collapse/expand tree"],
             ["Enter", "Activate selected tab"],

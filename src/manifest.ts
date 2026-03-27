@@ -45,10 +45,10 @@ const manifest: ManifestV3Export = {
     },
     "focus-search": {
       suggested_key: {
-        windows: "Ctrl+Shift+F",
-        mac: "Command+Shift+F",
-        linux: "Ctrl+Shift+F",
-        chromeos: "Ctrl+Shift+F",
+        windows: "Alt+F",
+        mac: "Alt+F",
+        linux: "Alt+F",
+        chromeos: "Alt+F",
       },
       description: "Focus search in side panel",
     },
