@@ -8,7 +8,7 @@ import { getChildren } from "@core/ParentMap";
 import { broadcast } from "@background/broadcast";
 import type { TabGroupColor } from "@core/types";
 
-const CANOPY_VERSION = "2.0.0";
+const CANOPY_VERSION = "1.0.0";
 
 /**
  * Set up the external extension API handler.
