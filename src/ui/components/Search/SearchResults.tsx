@@ -55,11 +55,17 @@ export function SearchResults() {
         e.preventDefault();
         activateResult(selectedIndex);
         break;
-      case "Escape":
+      case "Escape": {
         e.preventDefault();
+        // Clear search and return to tree view
+        useTabStore.getState().setSearchKeyword("");
         const input = document.querySelector<HTMLInputElement>("[data-search-input]");
-        input?.focus();
+        if (input) {
+          input.value = "";
+          input.focus();
+        }
         break;
+      }
     }
   }, [selectedIndex, allResults.length, activateResult]);
 

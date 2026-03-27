@@ -24,38 +24,63 @@ setupMessageHandler(tracker, storage);
 // Set up external extension API
 setupAPIHandler(tracker, storage);
 
-// Open side panel when extension icon is clicked
+// Track side panel open state per window for toggle behavior
+const sidePanelOpen = new Map<number, boolean>();
+
+// Toggle side panel when extension icon is clicked (Alt+S)
 chrome.action.onClicked.addListener(async (tab) => {
   try {
-    if (tab.windowId !== undefined) {
+    if (tab.windowId === undefined) return;
+    if (sidePanelOpen.get(tab.windowId)) {
+      // Panel is open — close it by disabling then re-enabling
+      await chrome.sidePanel.setOptions({ enabled: false });
+      sidePanelOpen.set(tab.windowId, false);
+      // Re-enable immediately so it can be opened again
+      await chrome.sidePanel.setOptions({ enabled: true, path: "src/ui/sidepanel/index.html" });
+    } else {
       await chrome.sidePanel.open({ windowId: tab.windowId });
+      sidePanelOpen.set(tab.windowId, true);
     }
   } catch {
     // Side panel may not be available
   }
 });
 
-// Handle special messages from onboarding/options pages
+// Handle special messages from UI pages
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.action === "OPEN_SIDE_PANEL") {
     chrome.windows.getCurrent().then(async (window) => {
       if (window.id !== undefined) {
         await chrome.sidePanel.open({ windowId: window.id });
+        sidePanelOpen.set(window.id, true);
       }
       sendResponse({ success: true });
     }).catch(() => sendResponse({ success: false }));
     return true;
   }
+  if (message?.action === "SIDE_PANEL_OPENED") {
+    if (typeof message.windowId === "number") {
+      sidePanelOpen.set(message.windowId, true);
+    }
+    return false;
+  }
+  if (message?.action === "SIDE_PANEL_CLOSED") {
+    if (typeof message.windowId === "number") {
+      sidePanelOpen.set(message.windowId, false);
+    }
+    return false;
+  }
   return false;
 });
 
-// Handle keyboard shortcut commands (Bug 2 fix: delay broadcast for panel mount)
+// Handle keyboard shortcut commands
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "focus-search" || command === "copy-context" || command === "save-session") {
     try {
       const window = await chrome.windows.getCurrent();
       if (window.id !== undefined) {
         await chrome.sidePanel.open({ windowId: window.id });
+        sidePanelOpen.set(window.id, true);
       }
     } catch {
       // Side panel may not be available
@@ -78,13 +103,11 @@ const NEW_TAB_URLS = new Set([
 // Chrome tab event listeners → broadcast as domain events
 chrome.tabs.onCreated.addListener(async (tab) => {
   await initPromise; // Bug 3 fix: wait for init before processing
-  // Bug 11 fix: don't parent new blank tabs — only parent tabs opened from links
   if (tab.pendingUrl && NEW_TAB_URLS.has(tab.pendingUrl)) {
-    // This is a Ctrl+T or address bar tab, not a link click — skip parenting
+    // Ctrl+T or address bar tab — skip parenting
   } else if (tab.url && NEW_TAB_URLS.has(tab.url)) {
     // Same check for url field
   } else {
-    // Bug 12 fix: skip if tracker is in restore mode
     if (!tracker.isRestoring) {
       await tracker.onTabCreated(tab);
     }
@@ -96,7 +119,7 @@ chrome.tabs.onCreated.addListener(async (tab) => {
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
-  await initPromise; // Bug 3 fix
+  await initPromise;
   await tracker.onTabRemoved(tabId);
   storage.removeTabActivity(tabId).catch(() => {});
   broadcast({ type: "TAB_REMOVED", tabId, windowId: removeInfo.windowId });

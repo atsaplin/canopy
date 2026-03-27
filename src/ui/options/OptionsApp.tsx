@@ -270,7 +270,7 @@ export function OptionsApp() {
                 These shortcuts are configurable via Chrome's extension shortcuts page.
               </p>
               <HotkeyRow label="Open side panel" keys="Alt + S" configurable />
-              <HotkeyRow label="Focus search" keys="Alt + F" configurable />
+              <HotkeyRow label="Focus search" keys="Ctrl + Shift + F" configurable />
               <HotkeyRow label="Copy context for AI" keys="Alt + C" configurable />
               <HotkeyRow label="Save session" keys="Not set" configurable />
             </section>

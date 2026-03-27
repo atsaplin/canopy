@@ -12,9 +12,26 @@ import { useSettingsStore } from "@ui/stores/settingsStore";
 export function App() {
   useChromeEvents();
   const loadSettings = useSettingsStore((s) => s.loadSettings);
+  // Notify service worker of panel open/close for toggle behavior
+  useEffect(() => {
+    chrome.windows.getCurrent().then((w) => {
+      if (w.id !== undefined) {
+        chrome.runtime.sendMessage({ action: "SIDE_PANEL_OPENED", windowId: w.id }).catch(() => {});
+      }
+    });
+    const handleUnload = () => {
+      chrome.windows.getCurrent().then((w) => {
+        if (w.id !== undefined) {
+          chrome.runtime.sendMessage({ action: "SIDE_PANEL_CLOSED", windowId: w.id }).catch(() => {});
+        }
+      });
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, []);
+
   useEffect(() => {
     loadSettings();
-    // Reload settings when changed from options page
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
       if (area === "local" && changes.canopy_settings) {
         loadSettings().then(() => {
