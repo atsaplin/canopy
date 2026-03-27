@@ -1,11 +1,20 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { useTabStore } from "@ui/stores/tabStore";
 
 export function SearchInput() {
   const searchKeyword = useTabStore((s) => s.searchKeyword);
   const setSearchKeyword = useTabStore((s) => s.setSearchKeyword);
+  const searchFocusRequested = useTabStore((s) => s.searchFocusRequested);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Focus when requested via store (triggered by Alt+S / Alt+F)
+  useEffect(() => {
+    if (searchFocusRequested > 0 && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [searchFocusRequested]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,16 +38,13 @@ export function SearchInput() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      // Move focus to first search result
       const firstResult = document.querySelector<HTMLElement>("[data-search-result]");
       firstResult?.focus();
     } else if (e.key === "Escape") {
       if (inputRef.current?.value) {
-        // First Escape clears search
         setSearchKeyword("");
         if (inputRef.current) inputRef.current.value = "";
       } else {
-        // Second Escape blurs input
         inputRef.current?.blur();
       }
     }

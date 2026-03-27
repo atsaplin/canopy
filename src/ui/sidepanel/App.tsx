@@ -47,20 +47,8 @@ export function App() {
       if (changes.canopy_command?.newValue) {
         const { command } = changes.canopy_command.newValue as { command: string };
         if (command === "focus-search") {
-          // Retry focus with delays to handle panel still rendering
-          const tryFocus = (attempts: number) => {
-            if (attempts <= 0) return;
-            setTimeout(() => {
-              const input = document.querySelector<HTMLInputElement>("[data-search-input]");
-              if (input) {
-                input.focus();
-                input.select();
-              } else {
-                tryFocus(attempts - 1);
-              }
-            }, attempts === 3 ? 50 : 200);
-          };
-          tryFocus(3);
+          // Use React state to trigger focus — direct focus() is blocked without user gesture
+          useTabStore.setState({ searchFocusRequested: Date.now() });
         } else if (command === "copy-context") {
           const btn = document.querySelector<HTMLButtonElement>("[data-context-dump]");
           btn?.click();
