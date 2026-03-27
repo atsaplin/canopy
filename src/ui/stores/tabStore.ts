@@ -3,7 +3,7 @@ import type { Tab, TabGroup, ParentMap, TabTreeNode, FlatTreeItem } from "@core/
 import { buildTree } from "@core/TreeBuilder";
 import { flattenTree, createRootNode } from "@core/TabTreeNode";
 import { filterTabs } from "@core/SearchEngine";
-import { getDecayLevel, type DecayLevel } from "@core/TabDecay";
+import type { DecayLevel } from "@core/TabDecay";
 import type { SearchResult } from "@core/types";
 
 /** Rebuild tree from state — pure helper. */
@@ -45,7 +45,7 @@ interface TabState {
   setBookmarkCache: (bookmarks: Tab[]) => void;
   selectNode: (nodeId: string, shiftKey: boolean, ctrlKey: boolean) => void;
   clearSelection: () => void;
-  updateDecayMap: (activity: Record<number, number>) => void;
+  updateDecayMap: (activity: Record<number, number>, staleThresholdHours?: number) => void;
 }
 
 export const useTabStore = create<TabState>((set, get) => ({
@@ -177,11 +177,13 @@ export const useTabStore = create<TabState>((set, get) => ({
 
   clearSelection: () => set({ selectedIds: new Set(), lastSelectedId: null }),
 
-  updateDecayMap: (activity: Record<number, number>) => {
+  updateDecayMap: (activity: Record<number, number>, staleThresholdHours = 24) => {
     const now = Date.now();
+    const thresholdMs = staleThresholdHours * 3600_000;
     const decayMap: Record<number, DecayLevel> = {};
     for (const [tabIdStr, lastAccessed] of Object.entries(activity)) {
-      decayMap[Number(tabIdStr)] = getDecayLevel(lastAccessed, now);
+      const age = now - lastAccessed;
+      decayMap[Number(tabIdStr)] = age >= thresholdMs ? "stale" : "fresh";
     }
     set({ tabDecayMap: decayMap, tabActivityMap: activity });
   },

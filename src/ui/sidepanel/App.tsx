@@ -16,7 +16,14 @@ export function App() {
     // Reload settings when changed from options page
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
       if (area === "local" && changes.canopy_settings) {
-        loadSettings();
+        loadSettings().then(() => {
+          // Recompute decay map with new threshold
+          const { tabActivityMap } = useTabStore.getState();
+          const { staleThresholdHours } = useSettingsStore.getState();
+          if (Object.keys(tabActivityMap).length > 0) {
+            useTabStore.getState().updateDecayMap(tabActivityMap, staleThresholdHours);
+          }
+        });
       }
     };
     chrome.storage.onChanged.addListener(handleStorageChange);

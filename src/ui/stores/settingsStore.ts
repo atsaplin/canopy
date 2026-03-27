@@ -3,6 +3,7 @@ import { create } from "zustand";
 export interface Settings {
   showDecayIndicators: boolean;
   alwaysShowTabAge: boolean;
+  staleThresholdHours: number;
   indentSize: number;
   confirmCloseTree: boolean;
 }
@@ -10,6 +11,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   showDecayIndicators: true,
   alwaysShowTabAge: false,
+  staleThresholdHours: 24,
   indentSize: 16,
   confirmCloseTree: false,
 };
@@ -32,6 +34,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({
         showDecayIndicators: saved.showDecayIndicators ?? DEFAULT_SETTINGS.showDecayIndicators,
         alwaysShowTabAge: saved.alwaysShowTabAge ?? DEFAULT_SETTINGS.alwaysShowTabAge,
+        staleThresholdHours: saved.staleThresholdHours ?? DEFAULT_SETTINGS.staleThresholdHours,
         indentSize: saved.indentSize ?? DEFAULT_SETTINGS.indentSize,
         confirmCloseTree: saved.confirmCloseTree ?? DEFAULT_SETTINGS.confirmCloseTree,
         loaded: true,
@@ -46,6 +49,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const newSettings: Settings = {
       showDecayIndicators: partial.showDecayIndicators ?? current.showDecayIndicators,
       alwaysShowTabAge: partial.alwaysShowTabAge ?? current.alwaysShowTabAge,
+      staleThresholdHours: partial.staleThresholdHours ?? current.staleThresholdHours,
       indentSize: partial.indentSize ?? current.indentSize,
       confirmCloseTree: partial.confirmCloseTree ?? current.confirmCloseTree,
     };

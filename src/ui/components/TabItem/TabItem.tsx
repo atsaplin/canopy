@@ -39,9 +39,8 @@ export function TabItem({ item }: TabItemProps) {
   const isSelected = selectedIds.has(node.id);
   const hasChildren = descendantCount > 0;
   const decayLevel = tabDecayMap[tab.id] ?? "fresh";
-  const decayOpacity = showDecayIndicators
-    ? (decayLevel === "decayed" ? "opacity-40" : decayLevel === "stale" ? "opacity-60" : decayLevel === "warm" ? "opacity-80" : "")
-    : "";
+  const isStale = decayLevel === "stale";
+  const decayOpacity = showDecayIndicators && isStale ? "opacity-50" : "";
   const paddingLeft = depth * indentSize + 8;
 
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
@@ -142,34 +141,22 @@ export function TabItem({ item }: TabItemProps) {
         <span className="truncate flex-1 text-[13px]">{tab.title}</span>
 
         {/* Tab age / decay indicator */}
+        {/* Tab age indicator */}
         {(() => {
           const lastAccessed = tabActivityMap[tab.id];
           const relTime = lastAccessed ? formatRelativeTime(lastAccessed) : "";
-          // Always show age if setting is on, regardless of decay level
-          if (alwaysShowTabAge && relTime) {
-            const color = decayLevel === "decayed" ? "text-orange-400" : decayLevel === "stale" ? "text-yellow-500" : "text-[var(--color-muted)]";
-            const emoji = showDecayIndicators && decayLevel === "decayed" ? "💤 " : showDecayIndicators && decayLevel === "stale" ? "⏳ " : "";
+          if (!relTime) return null;
+          if (alwaysShowTabAge) {
             return (
-              <span className={`text-[10px] shrink-0 ${color}`} title={`Last visited ${relTime} ago`}>
-                {emoji}{relTime}
+              <span className={`text-[10px] shrink-0 ${isStale && showDecayIndicators ? "text-yellow-500" : "text-[var(--color-muted)]"}`} title={`Last visited ${relTime} ago`}>
+                {isStale && showDecayIndicators ? "⏳ " : ""}{relTime}
               </span>
             );
           }
-          // Otherwise only show for non-fresh tabs when decay indicators are on
-          if (showDecayIndicators && decayLevel !== "fresh" && relTime) {
-            if (decayLevel === "warm") {
-              return (
-                <span className="text-[10px] shrink-0 text-[var(--color-muted)]" title={`Last visited ${relTime} ago`}>
-                  {relTime}
-                </span>
-              );
-            }
+          if (showDecayIndicators && isStale) {
             return (
-              <span
-                className={`text-[10px] shrink-0 ${decayLevel === "decayed" ? "text-orange-400" : "text-yellow-500"}`}
-                title={`Last visited ${relTime} ago`}
-              >
-                {decayLevel === "decayed" ? "💤" : "⏳"} {relTime}
+              <span className="text-[10px] shrink-0 text-yellow-500" title={`Last visited ${relTime} ago`}>
+                ⏳ {relTime}
               </span>
             );
           }

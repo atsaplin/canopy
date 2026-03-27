@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTabStore } from "@ui/stores/tabStore";
+import { useSettingsStore } from "@ui/stores/settingsStore";
 import { isDomainEvent } from "@shared/types/events";
 import type { DomainEvent } from "@shared/types/events";
 import type { Tab, TabGroup } from "@core/types";
@@ -74,7 +75,8 @@ export function useChromeEvents() {
         if (version !== refreshVersionRef.current) return;
         const activity = activityResult.canopy_activity as Record<number, number> | undefined;
         if (activity) {
-          useTabStore.getState().updateDecayMap(activity);
+          const { staleThresholdHours } = useSettingsStore.getState();
+          useTabStore.getState().updateDecayMap(activity, staleThresholdHours);
         }
       } catch (err) {
         console.error("Failed to load initial data:", err);

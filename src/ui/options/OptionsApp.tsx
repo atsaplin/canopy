@@ -195,6 +195,24 @@ export function OptionsApp() {
               />
 
               <SettingRow
+                label="Stale threshold (hours)"
+                description="Tabs inactive longer than this are marked stale and dimmed"
+                control={
+                  <input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    value={settings.staleThresholdHours}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (val > 0) updateSetting("staleThresholdHours", val);
+                    }}
+                    className="w-20 bg-[var(--color-hover)] border border-[var(--color-border)] rounded px-2 py-1 text-[13px] text-[var(--color-fg)] text-right"
+                  />
+                }
+              />
+
+              <SettingRow
                 label="Always show tab age"
                 description="Display how long ago each tab was last visited, even for fresh tabs"
                 control={

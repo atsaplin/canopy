@@ -69,21 +69,7 @@ export function SessionsDropdown() {
 
   return (
     <>
-      <button
-        ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 px-1.5 py-0.5 text-[12px] text-[var(--color-muted)]
-          hover:text-[var(--color-fg)] hover:bg-[var(--color-hover)] rounded transition-colors"
-        title="Sessions"
-      >
-        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-          <polyline points="17 21 17 13 7 13 7 21" />
-          <polyline points="7 3 7 8 15 8" />
-        </svg>
-      </button>
-
-      {/* Save button */}
+      {/* Save session — floppy disk icon */}
       <button
         data-save-session
         onClick={() => setIsSaveOpen(true)}
@@ -92,7 +78,22 @@ export function SessionsDropdown() {
         title="Save session"
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 5v14M5 12h14" />
+          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+          <polyline points="17 21 17 13 7 13 7 21" />
+          <polyline points="7 3 7 8 15 8" />
+        </svg>
+      </button>
+
+      {/* Load sessions — folder icon */}
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1 px-1.5 py-0.5 text-[12px] text-[var(--color-muted)]
+          hover:text-[var(--color-fg)] hover:bg-[var(--color-hover)] rounded transition-colors"
+        title="Load session"
+      >
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
         </svg>
       </button>
 
